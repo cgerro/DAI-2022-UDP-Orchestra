@@ -1,43 +1,47 @@
-const Net = require('net');
-const port = 8080;
+// 1 récupérer l'argument passer en paramètre
 
-const server = new Net.Server();
-server.listen(port, function () {
-	console.log(`Started musician on port ${port}`);
-});
+// créer un socket udp
 
-// Listen to incoming request
-server.on('connection', function (socket) {
-	console.log('Connexion to client initiated');
+// faire une fonction qui s'appelle chaque seconde et qui affiche un msg
 
-	// Generate musicians array
-	// TODO
-	const musicians = [
-		{
-			"uuid": "aa7d8cb3-a15f-4f06-a0eb-b8feb6244a60",
-			"instrument": "piano",
-			"activeSince": "2016-04-27T05:20:50.731Z"
-		},
-		{
-			"uuid": "06dbcbeb-c4c8-49ed-ac2a-cd8716cbf2d3",
-			"instrument": "flute",
-			"activeSince": "2016-04-27T05:39:03.211Z"
-		}
-	]
+var args = process.argv.slice(2);
+console.log(args);
 
-	// When a client connects to TCP, send musician data
-	socket.write(JSON.stringify(musicians));
+var instrument = args[0];
 
-	// Ignore client data
-	socket.on('data', function (chunk) {
-		console.log(`Data received from client, but ignored:\n${chunk.toString()}`);
-	});
+const config = require('../../config.js')
 
-	socket.on('end', function () {
-		console.log('Connexion to client terminated');
-	});
+const UDP = require('dgram')
+const musician = UDP.createSocket('udp4')
 
-	socket.on('error', function (err) {
-		console.log(`Error: ${err}`);
-	});
-});
+const port = config.PROTOCOL_PORT;
+const multicast_address = config.PROTOCOL_MULTICAST_ADDRESS;
+
+function makeNoise(instrument) {
+    switch (instrument) {
+        case 'flute':
+            return "trulu"
+        case 'drum':
+            return "boum-boum"
+        case 'piano':
+            return "ti-ta-ti"
+        case 'violin':
+            return "gzi-gzi"
+        case 'trumpet':
+            return "pouet"
+    }
+}
+
+const packet = Buffer.from(makeNoise(instrument))
+
+function send() {
+    musician.send(packet, port, multicast_address, (err) => {
+        if (err) {
+            console.error('Failed to send packet !!')
+        } else {
+            console.log('Packet send !!')
+        }
+    })
+}
+
+const timeId = setInterval(send, 1000)
