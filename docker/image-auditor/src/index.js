@@ -26,12 +26,17 @@ const addLog = (type, message) => {
 
 // ---------- LOAD CONFIG ----------
 const config = require('../../config.js')
-const udpPort = config.PROTOCOL_PORT;
-const multicast_address = config.PROTOCOL_MULTICAST_ADDRESS;
+const musician = require('./musician');
 
 // ---------- UDP SERVER ----------
 const dgram = require('dgram')
 const udpSocket = dgram.createSocket('udp4');
+let musicians = new Map();
+
+udpSocket.bind(config.port, () => {
+	console.log("Joining multicast group");
+	udpSocket.addMembership(config.address);
+});
 
 udpSocket.on('error', (err) => {
 	addLog(LogType.UDP, `Server error:\n${err.stack}`);
@@ -39,45 +44,56 @@ udpSocket.on('error', (err) => {
 });
 
 udpSocket.on('message', (msg, rinfo) => {
-	addLog(LogType.UDP, `Server got: ${msg} from ${rinfo.address}:${rinfo.port}`);
+	var message = JSON.parse(msg);
+
+	let trouve = false;
+	musicians.forEach((value, key, map) => {
+		if(key.uuid == message.uuid) {
+			musicians.set(key, Date.now());
+			trouve = true;
+		}
+	});
+
+	if(!trouve) {
+		let instrument;
+		for([key, val] of Object.entries(config.instruments)) {
+			if(val == message.instrument) {
+				instrument = key;
+				break;
+			}
+		}
+		musicians.set(new musician.Musician(message.uuid, instrument, new Date()), Date.now());
+	}
 });
+
+// Vérifie chaque seconde si un des musiciens n'est plus actif
+setInterval(() => {
+	musicians.forEach((value, key, map) => {
+		if(Date.now() - value > config.timeout) {
+			musicians.delete(key);
+		}
+	});
+}, 1000);
 
 udpSocket.on('listening', () => {
 	const address = server.address();
 	addLog(LogType.UDP, `Started UDP server for auditor on ${address}:${udpPort}`);
-})
-
-udpSocket.bind(udpPort, () => {
-	udpSocket.addMembership(multicast_address);
 });
+
+
 
 // ---------- TCP SERVER ----------
 const Net = require('net');
-const tcpPort = 2205;
+const TCP_PORT = 2205;
 
 const server = new Net.Server();
-server.listen(tcpPort, function () {
+server.listen(TCP_PORT, function () {
 	addLog(LogType.TCP, `Started TCP server on port ${tcpPort}`);
 });
 
 // Listen to incoming request
 server.on('connection', function (socket) {
 	addLog(LogType.TCP, 'Connexion to client initiated');
-
-	// Generate musicians array
-	// TODO
-	const musicians = [
-		{
-			"uuid": "aa7d8cb3-a15f-4f06-a0eb-b8feb6244a60",
-			"instrument": "piano",
-			"activeSince": "2016-04-27T05:20:50.731Z"
-		},
-		{
-			"uuid": "06dbcbeb-c4c8-49ed-ac2a-cd8716cbf2d3",
-			"instrument": "flute",
-			"activeSince": "2016-04-27T05:39:03.211Z"
-		}
-	]
 
 	// When a client connects to TCP, send musician data
 	socket.write(JSON.stringify(musicians));
@@ -94,4 +110,7 @@ server.on('connection', function (socket) {
 	socket.on('error', function (err) {
 		addLog(LogType.TCP, `Error: ${err}`);
 	});
+
+	socket.end();
+	
 });

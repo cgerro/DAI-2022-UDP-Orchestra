@@ -17,5 +17,7 @@ const INSTRUMENTS = {
 module.exports = {
     address: PROTOCOL_MULTICAST_ADDRESS,
     port: PROTOCOL_PORT,
+    timeout: PROTOCOL_MUSICIAN_TIMEOUT,
     instruments: INSTRUMENTS
+
 }
