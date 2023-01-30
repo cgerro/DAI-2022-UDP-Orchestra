@@ -1,4 +1,4 @@
-const config = require('../../config.js')
+const config = require('./config.js')
 const UDP = require('dgram')
 const musician = UDP.createSocket('udp4')
 const { v4: uuidv4 } = require('uuid')

@@ -1,7 +1,7 @@
 class Musician {
     constructor(uuid, instrument, activeSince) {
         this.uuid = uuid;
-        this.instrment = instrument;
+        this.instrument = instrument;
         this.activeSince = activeSince;
     }
 }

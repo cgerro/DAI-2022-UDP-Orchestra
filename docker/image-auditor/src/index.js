@@ -25,7 +25,7 @@ const addLog = (type, message) => {
 };
 
 // ---------- LOAD CONFIG ----------
-const config = require('../../config.js')
+const config = require('./config.js')
 const musician = require('./musician');
 
 // ---------- UDP SERVER ----------
@@ -44,6 +44,7 @@ udpSocket.on('error', (err) => {
 });
 
 udpSocket.on('message', (msg, rinfo) => {
+	addLog(LogType.UDP, `Server got data from ${rinfo.address}:${rinfo.port}`);
 	var message = JSON.parse(msg);
 
 	let trouve = false;
@@ -56,12 +57,12 @@ udpSocket.on('message', (msg, rinfo) => {
 
 	if(!trouve) {
 		let instrument;
-		for([key, val] of Object.entries(config.instruments)) {
-			if(val == message.instrument) {
-				instrument = key;
-				break;
+		for([instrumentType, sound] of Object.entries(config.instruments)) {
+			if (message.sound === sound) {
+				instrument = instrumentType;
 			}
 		}
+		if (!instrument) console.error(`Instrument "${message.sound}" inconnu`);
 		musicians.set(new musician.Musician(message.uuid, instrument, new Date()), Date.now());
 	}
 });
@@ -96,7 +97,17 @@ server.on('connection', function (socket) {
 	addLog(LogType.TCP, 'Connexion to client initiated');
 
 	// When a client connects to TCP, send musician data
-	socket.write(JSON.stringify(musicians));
+	const musiciansPayload = [];
+	let musicianPayload;
+	for (const [musician, timestamp] of musicians) {
+		musiciansPayload.push({
+			uuid: musician.uuid,
+			instrument: musician.instrument,
+			activeSince: new Date(timestamp),
+		});
+	}
+
+	socket.write(JSON.stringify(musiciansPayload));
 
 	// Ignore client data
 	socket.on('data', function (chunk) {
