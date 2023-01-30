@@ -65,6 +65,7 @@ udpSocket.on('message', (msg, rinfo) => {
 		if (!instrument) console.error(`Instrument "${message.sound}" inconnu`);
 		musicians.set(new musician.Musician(message.uuid, instrument, new Date()), Date.now());
 	}
+	addLog(LogType.UDP, `Server got: ${msg} from ${rinfo.address}:${rinfo.port}`);
 });
 
 // Vérifie chaque seconde si un des musiciens n'est plus actif
