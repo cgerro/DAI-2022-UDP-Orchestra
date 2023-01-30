@@ -31,6 +31,11 @@ const musician = require('./musician');
 // ---------- UDP SERVER ----------
 const dgram = require('dgram')
 const udpSocket = dgram.createSocket('udp4');
+// The musician map has the uuid for the key and the musician data as the body
+// Example :
+// uuid1 { instrument: "piano", "activeSince": "2023-01-30T17:45:13.874Z"}
+// uuid2 { instrument: "flute", "activeSince": "2023-01-30T17:44:37.874Z"}
+// ...
 let musicians = new Map();
 
 udpSocket.bind(config.port, () => {
@@ -45,33 +50,39 @@ udpSocket.on('error', (err) => {
 
 udpSocket.on('message', (msg, rinfo) => {
 	addLog(LogType.UDP, `Server got data from ${rinfo.address}:${rinfo.port}`);
-	var message = JSON.parse(msg);
+	const message = JSON.parse(msg);
 
-	let trouve = false;
-	musicians.forEach((value, key, map) => {
-		if(key.uuid == message.uuid) {
-			musicians.set(key, Date.now());
-			trouve = true;
+	// Find instrument type of this musician based on the sound it makes
+	let inferredInstrument;
+	for([instrumentType, sound] of Object.entries(config.instruments)) {
+		if (message.sound === sound) {
+			inferredInstrument = instrumentType;
+		}
+	}
+	if (!inferredInstrument) {
+		console.error(`Instrument "${message.sound}" inconnu`);
+		return;
+	}
+
+	// If the musician doesn't exist, add it to the list
+	if (!musicians.has(message.uuid)) {
+		musicians.set(message.uuid, {instrument: inferredInstrument, activeSince: new Date()});
+		return;
+	}
+
+	// If the musician doesn't exist
+	musicians.forEach((musicianData, uuid) => {
+		if (uuid == message.uuid) {
+			musicians.set(uuid, {instrument: inferredInstrument, activeSince: new Date()});
 		}
 	});
-
-	if(!trouve) {
-		let instrument;
-		for([instrumentType, sound] of Object.entries(config.instruments)) {
-			if (message.sound === sound) {
-				instrument = instrumentType;
-			}
-		}
-		if (!instrument) console.error(`Instrument "${message.sound}" inconnu`);
-		musicians.set(new musician.Musician(message.uuid, instrument, new Date()), Date.now());
-	}
 });
 
 // Vérifie chaque seconde si un des musiciens n'est plus actif
 setInterval(() => {
-	musicians.forEach((value, key, map) => {
-		if(Date.now() - value > config.timeout) {
-			musicians.delete(key);
+	musicians.forEach((musicianData, uuid) => {
+		if (new Date() - musicianData.activeSince > config.timeout) {
+			musicians.delete(uuid);
 		}
 	});
 }, 1000);
@@ -98,12 +109,11 @@ server.on('connection', function (socket) {
 
 	// When a client connects to TCP, send musician data
 	const musiciansPayload = [];
-	let musicianPayload;
-	for (const [musician, timestamp] of musicians) {
+	for (const [uuid, musicianData] of musicians) {
 		musiciansPayload.push({
-			uuid: musician.uuid,
-			instrument: musician.instrument,
-			activeSince: new Date(timestamp),
+			uuid,
+			instrument: musicianData.instrument,
+			activeSince: musicianData.activeSince,
 		});
 	}
 
