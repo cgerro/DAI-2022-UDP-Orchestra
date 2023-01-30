@@ -46,4 +46,7 @@ git remote -v | tee check.log
 docker run --name dai -v //var//run//docker.sock:/var/run/docker.sock dai/validate-music | tee -a check.log
 
 
+# prevent the script from exiting immediately
+read -p "Press any key to continue... " -n1 -s
+
 

@@ -1,7 +1,7 @@
-FROM node:18
+FROM node:18.13.0
 
-COPY src/* /var/opt/
-WORKDIR /var/opt
+COPY ./src /opt/app
+WORKDIR /opt/app
 RUN npm install
 
 ENTRYPOINT ["node", "index.js"]
