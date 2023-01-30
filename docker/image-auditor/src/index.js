@@ -77,7 +77,7 @@ setInterval(() => {
 
 udpSocket.on('listening', () => {
 	const address = server.address();
-	addLog(LogType.UDP, `Started UDP server for auditor on ${address}:${udpPort}`);
+	addLog(LogType.UDP, `Started UDP server for auditor on ${address}:${config.port}`);
 });
 
 
@@ -88,7 +88,7 @@ const TCP_PORT = 2205;
 
 const server = new Net.Server();
 server.listen(TCP_PORT, function () {
-	addLog(LogType.TCP, `Started TCP server on port ${tcpPort}`);
+	addLog(LogType.TCP, `Started TCP server on port ${TCP_PORT}`);
 });
 
 // Listen to incoming request
