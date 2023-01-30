@@ -17,16 +17,13 @@ else if(!(process.argv[2] in config.instruments)) {
 var args = process.argv.slice(2);
 console.log(args);
 
-
 var instrument = config.instruments[args[0]];
 
-function uuid() {
-    return uuidv4();
-}
 
 const paquet = JSON.stringify({
-    uuid: uuid(),
-    instrument: instrument});
+    uuid: uuidv4(),
+    sound: instrument
+});
 
 
 function send() {
@@ -39,6 +36,6 @@ function send() {
     })
 }
 
-const timeId = setInterval(send, 1000)
+setInterval(send, 1000);
 
 
