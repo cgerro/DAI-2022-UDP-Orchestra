@@ -48,8 +48,8 @@ udpSocket.on('message', (msg, rinfo) => {
 	var message = JSON.parse(msg);
 
 	let trouve = false;
-	musicians.forEach((value, key, map) => {
-		if(key.uuid == message.uuid) {
+	musicians.forEach((value, key) => {
+		if(key.uuid === message.uuid) {
 			musicians.set(key, Date.now());
 			trouve = true;
 		}
@@ -70,7 +70,7 @@ udpSocket.on('message', (msg, rinfo) => {
 
 // Vérifie chaque seconde si un des musiciens n'est plus actif
 setInterval(() => {
-	musicians.forEach((value, key, map) => {
+	musicians.forEach((value, key) => {
 		if(Date.now() - value > config.timeout) {
 			musicians.delete(key);
 		}

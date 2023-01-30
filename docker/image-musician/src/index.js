@@ -4,7 +4,7 @@ const musician = UDP.createSocket('udp4')
 const { v4: uuidv4 } = require('uuid')
 
 
-if (process.argv.length != 3) {
+if (process.argv.length !== 3) {
     console.log('Invalid number of arguments ! Exit the programm...')
     process.exit()
 }
